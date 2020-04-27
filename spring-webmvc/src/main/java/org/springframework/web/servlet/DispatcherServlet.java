@@ -933,20 +933,27 @@ public class DispatcherServlet extends FrameworkServlet {
 			Exception dispatchException = null;
 
 			try {
+				// 检查是否为文件上传类请求
 				processedRequest = checkMultipart(request);
 				multipartRequestParsed = (processedRequest != request);
 
 				// Determine handler for the current request.
+				// 确定当前请求的处理程序（执行器链，包括执行器与拦截器）
+				// ？如何确定
 				mappedHandler = getHandler(processedRequest);
+				// 找不到处理程序处理
 				if (mappedHandler == null || mappedHandler.getHandler() == null) {
 					noHandlerFound(processedRequest, response);
 					return;
 				}
 
 				// Determine handler adapter for the current request.
+				// 确定当前请求的处理程序的适配器
+				// 如何确定
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
+				// GET HEAD 请求检查，如是GET请求并且没有更新则不处理
 				String method = request.getMethod();
 				boolean isGet = "GET".equals(method);
 				if (isGet || "HEAD".equals(method)) {
@@ -958,19 +965,22 @@ public class DispatcherServlet extends FrameworkServlet {
 						return;
 					}
 				}
-
+				// 请求的前置处理（实际是调用执行拦截器的前置处理 @link HandlerInterceptor#preHandle）
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
 
 				// Actually invoke the handler.
+				// 实际处理程序调用并返回ModelAndView
+				// ？如何执行
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
-
+				// 如是并发处理直接返回
 				if (asyncManager.isConcurrentHandlingStarted()) {
 					return;
 				}
-
+				// 应用默认视图名称
 				applyDefaultViewName(processedRequest, mv);
+				// 请求的后置处理（实际是调用执行拦截器的后置处理 @link HandlerInterceptor#postHandle）
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
@@ -981,6 +991,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				// making them available for @ExceptionHandler methods and other scenarios.
 				dispatchException = new NestedServletException("Handler dispatch failed", err);
 			}
+			// 处理调度结果（错误处理，视图渲染，拦截器已完成方法执行 @link HandlerInterceptor#triggerAfterCompletion）
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
@@ -1152,11 +1163,14 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * @return the HandlerExecutionChain, or {@code null} if no handler could be found
 	 */
 	protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+		// 依次从执行器匹配器中获取，哪个获取到应用哪个
+		// ？执行器匹配器中怎么获取的
 		for (HandlerMapping hm : this.handlerMappings) {
 			if (logger.isTraceEnabled()) {
 				logger.trace(
 						"Testing handler map [" + hm + "] in DispatcherServlet with name '" + getServletName() + "'");
 			}
+			// 该方法的唯一实现 @link AbstractHandlerMapping#getHandler
 			HandlerExecutionChain handler = hm.getHandler(request);
 			if (handler != null) {
 				return handler;

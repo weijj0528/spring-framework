@@ -349,24 +349,33 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 */
 	@Override
 	public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+		// 1、获取请求处理器
+		// 1.1、获取处理器子类实现（模板方法）
+		// ？子类的实现 有两个类实现了该方法
+		// @link AbstractHandlerMethodMapping#getHandlerInternal
+		// @link AbstractUrlHandlerMapping#getHandlerInternal
 		Object handler = getHandlerInternal(request);
 		if (handler == null) {
+			// 获取默认的处理器
 			handler = getDefaultHandler();
 		}
 		if (handler == null) {
 			return null;
 		}
 		// Bean name or resolved handler?
+		// 1.2、如为String类型获取容器中对应的处理器Bean
 		if (handler instanceof String) {
 			String handlerName = (String) handler;
 			handler = getApplicationContext().getBean(handlerName);
 		}
-
+		// 2、获取请求处理器执行链（主要是匹配拦截器）
 		HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);
+		// 2.1、跨域请求处理
 		if (CorsUtils.isCorsRequest(request)) {
 			CorsConfiguration globalConfig = this.globalCorsConfigSource.getCorsConfiguration(request);
 			CorsConfiguration handlerConfig = getCorsConfiguration(handler, request);
 			CorsConfiguration config = (globalConfig != null ? globalConfig.combine(handlerConfig) : handlerConfig);
+			// 获取跨域请求处理链
 			executionChain = getCorsHandlerExecutionChain(request, executionChain, config);
 		}
 		return executionChain;
@@ -411,10 +420,13 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 * @see #getAdaptedInterceptors()
 	 */
 	protected HandlerExecutionChain getHandlerExecutionChain(Object handler, HttpServletRequest request) {
+		// 如处理器类型为处理链则处理自身否则新建
 		HandlerExecutionChain chain = (handler instanceof HandlerExecutionChain ?
 				(HandlerExecutionChain) handler : new HandlerExecutionChain(handler));
-
+		// 用来匹配的请求路径
 		String lookupPath = this.urlPathHelper.getLookupPathForRequest(request);
+		// 遍历拦截器，如为MappedInterceptor类型则获取真正的拦截器加入处理链否则直接加处理链
+		// MappedInterceptor 基于URL匹配的拦截器
 		for (HandlerInterceptor interceptor : this.adaptedInterceptors) {
 			if (interceptor instanceof MappedInterceptor) {
 				MappedInterceptor mappedInterceptor = (MappedInterceptor) interceptor;
