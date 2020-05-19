@@ -53,6 +53,9 @@ class PostProcessorRegistrationDelegate {
 			ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {
 
 		// Invoke BeanDefinitionRegistryPostProcessors first, if any.
+		// 先 入参（beanFactoryPostProcessors） 后 查询
+		// 先 BeanDefinitionRegistryPostProcessor 后 BeanFactoryPostProcessor
+		// 先 PriorityOrdered 再 Ordered 最后无排序的
 		Set<String> processedBeans = new HashSet<String>();
 
 		if (beanFactory instanceof BeanDefinitionRegistry) {
