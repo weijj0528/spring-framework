@@ -1618,12 +1618,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	protected Object getObjectForBeanInstance(
 			Object beanInstance, String name, String beanName, RootBeanDefinition mbd) {
-
+		// 不是FactoryBean 且name又指明是FactoryBean(&beanName形式)
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
 		if (BeanFactoryUtils.isFactoryDereference(name) && !(beanInstance instanceof FactoryBean)) {
 			throw new BeanIsNotAFactoryException(transformedBeanName(name), beanInstance.getClass());
 		}
-
+		// 不是FactoryBean 或name又指明是FactoryBean直接返回
 		// Now we have the bean instance, which may be a normal bean or a FactoryBean.
 		// If it's a FactoryBean, we use it to create a bean instance, unless the
 		// caller actually wants a reference to the factory.
@@ -1631,11 +1631,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			return beanInstance;
 		}
 
+		// 只有一种情况了 是FactoryBean name又指明是普通Bean 该种情况就用FactoryBean来创建Bean
 		Object object = null;
 		if (mbd == null) {
+			// 先从缓存里取
 			object = getCachedObjectForFactoryBean(beanName);
 		}
 		if (object == null) {
+			// 从FactoryBean中取
 			// Return bean instance from factory.
 			FactoryBean<?> factory = (FactoryBean<?>) beanInstance;
 			// Caches object obtained from FactoryBean if it is a singleton.
